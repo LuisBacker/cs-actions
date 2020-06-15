@@ -24,6 +24,7 @@ import static io.cloudslang.content.nutanix.prism.service.VMImpl.updateVM;
 import static io.cloudslang.content.nutanix.prism.utils.Constants.Common.*;
 import static io.cloudslang.content.nutanix.prism.utils.Constants.UpdateVMConstants.UPDATE_VM_OPERATION_NAME;
 import static io.cloudslang.content.nutanix.prism.utils.Descriptions.Common.*;
+import static io.cloudslang.content.nutanix.prism.utils.Descriptions.CreateVM.IS_EMPTY_DISK_DESC;
 import static io.cloudslang.content.nutanix.prism.utils.Descriptions.UpdateVM.*;
 import static io.cloudslang.content.nutanix.prism.utils.HttpUtils.getFailureResults;
 import static io.cloudslang.content.nutanix.prism.utils.HttpUtils.getOperationResults;
@@ -74,7 +75,7 @@ public class UpdateVM {
                                        @Param(value = IS_SCSI_PASS_THROUGH, description = IS_SCSI_PASS_THROUGH_DESC) String isSCSIPassThrough,
                                        @Param(value = IS_THIN_PROVISIONED, description = IS_THIN_PROVISIONED_DESC) String isThinProvisioned,
                                        @Param(value = IS_CDROM, description = IS_CDROM_DESC) String isCDROM,
-                                       @Param(value = IS_EMPTY, description = IS_EMPTY_DESC) String isEmpty,
+                                       @Param(value = IS_EMPTY_DISK, description = IS_EMPTY_DISK) String isEmpty,
                                        @Param(value = DEVICE_BUS, description = DEVICE_BUS_DESC) String deviceBus,
                                        @Param(value = DISK_LABEL, description = DISK_LABEL_DESC) String diskLabel,
                                        @Param(value = DEVICE_INDEX, description = DEVICE_INDEX_DESC) String deviceIndex,
@@ -185,7 +186,7 @@ public class UpdateVM {
                 final String taskUUID = JsonPath.read(returnMessage, TASK_UUID_PATH);
                 results.put(TASK_UUID, taskUUID);
             } else {
-                return getFailureResults(hostname, statusCode, returnMessage);
+                return getFailureResults(hostname, statusCode, returnMessage,returnMessage,returnMessage);
             }
             return results;
         } catch (Exception exception) {
