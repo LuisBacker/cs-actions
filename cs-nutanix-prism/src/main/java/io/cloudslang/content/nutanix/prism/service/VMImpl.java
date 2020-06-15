@@ -22,7 +22,9 @@ import io.cloudslang.content.httpclient.services.HttpClientService;
 import io.cloudslang.content.nutanix.prism.entities.NutanixCreateVMInputs;
 import io.cloudslang.content.nutanix.prism.entities.NutanixGetVMDetailsInputs;
 import io.cloudslang.content.nutanix.prism.entities.NutanixListVMsInputs;
+import io.cloudslang.content.nutanix.prism.entities.NutanixUpdateVMInputs;
 import io.cloudslang.content.nutanix.prism.service.models.virtualmachines.CreateVMRequestBody;
+import io.cloudslang.content.nutanix.prism.service.models.virtualmachines.UpdateVMRequestBody;
 import org.apache.http.client.utils.URIBuilder;
 import org.jetbrains.annotations.NotNull;
 
@@ -33,11 +35,13 @@ import java.util.Map;
 
 import static io.cloudslang.content.nutanix.prism.service.HttpCommons.setCommonHttpInputs;
 import static io.cloudslang.content.nutanix.prism.utils.Constants.Common.*;
+import static io.cloudslang.content.nutanix.prism.utils.Constants.Common.PUT;
 import static io.cloudslang.content.nutanix.prism.utils.Constants.GetVMDetailsConstants.GET_VM_DETAILS_PATH;
 import static io.cloudslang.content.nutanix.prism.utils.HttpUtils.getQueryParams;
 import static io.cloudslang.content.nutanix.prism.utils.HttpUtils.getUriBuilder;
 import static io.cloudslang.content.utils.OutputUtilities.getFailureResultsMap;
 import static org.apache.commons.lang3.StringUtils.EMPTY;
+import static org.apache.commons.lang3.StringUtils.isEmpty;
 
 
 public class VMImpl {
@@ -77,6 +81,28 @@ public class VMImpl {
         httpClientInputs.setMethod(POST);
         httpClientInputs.setUsername(nutanixCreateVMInputs.getCommonInputs().getUsername());
         httpClientInputs.setPassword(nutanixCreateVMInputs.getCommonInputs().getPassword());
+        httpClientInputs.setContentType(APPLICATION_API_JSON);
+        return new HttpClientService().execute(httpClientInputs);
+    }
+
+    @NotNull
+    public static Map<String, String> updateVM(@NotNull final NutanixUpdateVMInputs nutanixUpdateVMInputs)
+            throws Exception {
+        final HttpClientInputs httpClientInputs = new HttpClientInputs();
+        httpClientInputs.setUrl(updateVMURL(nutanixUpdateVMInputs));
+        setCommonHttpInputs(httpClientInputs, nutanixUpdateVMInputs.getCommonInputs());
+        try {
+            httpClientInputs.setBody(updateVMBody(nutanixUpdateVMInputs, DELIMITER));
+        } catch (JsonProcessingException e) {
+            return getFailureResultsMap(e);
+        }
+        System.out.println("---------------------------------");
+        System.out.println(httpClientInputs.getBody());
+        System.out.println("---------------------------------");
+        httpClientInputs.setAuthType(BASIC);
+        httpClientInputs.setMethod(PUT);
+        httpClientInputs.setUsername(nutanixUpdateVMInputs.getCommonInputs().getUsername());
+        httpClientInputs.setPassword(nutanixUpdateVMInputs.getCommonInputs().getPassword());
         httpClientInputs.setContentType(APPLICATION_API_JSON);
         return new HttpClientService().execute(httpClientInputs);
     }
@@ -135,6 +161,19 @@ public class VMImpl {
         return uriBuilder.build().toURL().toString();
     }
 
+    @NotNull
+    public static String updateVMURL(NutanixUpdateVMInputs nutanixUpdateVMInputs) throws Exception {
+
+        final URIBuilder uriBuilder = getUriBuilder(nutanixUpdateVMInputs.getCommonInputs());
+        StringBuilder pathString = new StringBuilder()
+                .append(API)
+                .append(nutanixUpdateVMInputs.getCommonInputs().getAPIVersion())
+                .append(GET_VM_DETAILS_PATH)
+                .append(PATH_SEPARATOR)
+                .append(nutanixUpdateVMInputs.getVmUUID());
+        uriBuilder.setPath(pathString.toString());
+        return uriBuilder.build().toURL().toString();
+    }
 
     @NotNull
     public static String createVMBody(NutanixCreateVMInputs nutanixCreateVMInputs, String delimiter)
@@ -226,6 +265,155 @@ public class VMImpl {
         vmDiskList.add(vmDisks);
         createVMData.setVmDisks(vmDiskList);
         createVMData.setAffinity(affinity);
+
+        try {
+            requestBody = createVMMapper.writeValueAsString(createVMData);
+        } catch (JsonProcessingException e) {
+            e.printStackTrace();
+        }
+        return requestBody;
+    }
+
+    @NotNull
+    public static String updateVMBody(NutanixUpdateVMInputs nutanixUpdateVMInputs, String delimiter)
+            throws JsonProcessingException {
+        String requestBody = EMPTY;
+        final List<String> hostUUIDsList = new ArrayList<>();
+        ObjectMapper createVMMapper = new ObjectMapper();
+        UpdateVMRequestBody createVMBody = new UpdateVMRequestBody();
+        UpdateVMRequestBody.CreateVMData createVMData = createVMBody.new CreateVMData();
+        createVMData.setName(nutanixUpdateVMInputs.getVmName());
+        createVMData.setDescription(nutanixUpdateVMInputs.getDescription());
+        if(!isEmpty(nutanixUpdateVMInputs.getVmMemorySize())) {
+            createVMData.setMemory_mb(Integer.parseInt(nutanixUpdateVMInputs.getVmMemorySize()) * 1024);
+        }
+        if(!isEmpty(nutanixUpdateVMInputs.getNumVCPUs())) {
+            createVMData.setNum_vcpus(Integer.parseInt(nutanixUpdateVMInputs.getNumVCPUs()));
+        }
+        if(!isEmpty(nutanixUpdateVMInputs.getNumCoresPerVCPU())) {
+            createVMData.setNum_cores_per_vcpu(Integer.parseInt(nutanixUpdateVMInputs.getNumCoresPerVCPU()));
+        }
+        createVMData.setTimezone(nutanixUpdateVMInputs.getTimeZone());
+        createVMData.setHypervisor_type(nutanixUpdateVMInputs.getHypervisorType());
+
+        UpdateVMRequestBody.Affinity affinity = createVMBody.new Affinity();
+        if (!nutanixUpdateVMInputs.getHostUUIDs().isEmpty()) {
+            String[] hostUUIDs = nutanixUpdateVMInputs.getHostUUIDs().split(delimiter);
+            Collections.addAll(hostUUIDsList, hostUUIDs);
+            affinity.setHost_uuids(hostUUIDsList);
+            affinity.setPolicy(AFFINITY);
+        }
+        UpdateVMRequestBody.VMDisks vmDisks = createVMBody.new VMDisks();
+        UpdateVMRequestBody.DiskAddress diskAddress = createVMBody.new DiskAddress();
+        if(!isEmpty(nutanixUpdateVMInputs.getIsCDROM() )) {
+            if (Boolean.parseBoolean(nutanixUpdateVMInputs.getIsCDROM()) == true) {
+                diskAddress.setDevice_bus(nutanixUpdateVMInputs.getDeviceBus());
+                diskAddress.setDisk_label(nutanixUpdateVMInputs.getDiskLabel());
+                diskAddress.setDevice_index(Integer.parseInt(nutanixUpdateVMInputs.getDeviceIndex()));
+                diskAddress.setNdfs_filepath(nutanixUpdateVMInputs.getNdfsFilepath());
+                vmDisks.setFlash_mode_enabled(Boolean.parseBoolean(nutanixUpdateVMInputs.getFlashModeEnabled()));
+                vmDisks.setIs_scsi_pass_through(Boolean.parseBoolean(nutanixUpdateVMInputs.getIsSCSIPassThrough()));
+                vmDisks.setIs_thin_provisioned(Boolean.parseBoolean(nutanixUpdateVMInputs.getIsThinProvisioned()));
+                vmDisks.setIs_cdrom(Boolean.parseBoolean(nutanixUpdateVMInputs.getIsCDROM()));
+                UpdateVMRequestBody.VMDiskClone vmDiskClone = createVMBody.new VMDiskClone();
+                UpdateVMRequestBody.CloneDiskAddress cloneDiskAddress = createVMBody.new CloneDiskAddress();
+                cloneDiskAddress.setVmdisk_uuid(nutanixUpdateVMInputs.getSourceVMDiskUUID());
+                vmDiskClone.setMinimum_size(Integer.parseInt(nutanixUpdateVMInputs.getVmDiskMinimumSize()));
+                vmDiskClone.setStorage_container_uuid(nutanixUpdateVMInputs.getStorageContainerUUID());
+                vmDiskClone.setDisk_address(cloneDiskAddress);
+                vmDisks.setVm_disk_clone(vmDiskClone);
+
+                if (!nutanixUpdateVMInputs.getExternalDiskUrl().isEmpty()) {
+                    diskAddress.setDevice_bus(nutanixUpdateVMInputs.getDeviceBus());
+                    diskAddress.setDisk_label(nutanixUpdateVMInputs.getDiskLabel());
+                    diskAddress.setDevice_index(Integer.parseInt(nutanixUpdateVMInputs.getDeviceIndex()));
+                    diskAddress.setNdfs_filepath(nutanixUpdateVMInputs.getNdfsFilepath());
+                    vmDisks.setFlash_mode_enabled(Boolean.parseBoolean(nutanixUpdateVMInputs.getFlashModeEnabled()));
+                    vmDisks.setIs_scsi_pass_through(Boolean.parseBoolean(nutanixUpdateVMInputs.getIsSCSIPassThrough()));
+                    vmDisks.setIs_thin_provisioned(Boolean.parseBoolean(nutanixUpdateVMInputs.getIsThinProvisioned()));
+                    vmDisks.setIs_cdrom(Boolean.parseBoolean(nutanixUpdateVMInputs.getIsCDROM()));
+                    vmDisks.setIs_empty(Boolean.parseBoolean(nutanixUpdateVMInputs.getIsEmpty()));
+                    UpdateVMRequestBody.VMDiskCloneExternal vmDiskCloneExternal = createVMBody.new VMDiskCloneExternal();
+                    vmDiskCloneExternal.setExternal_disk_url(nutanixUpdateVMInputs.getExternalDiskUrl());
+                    vmDiskCloneExternal.setSize(Integer.parseInt(nutanixUpdateVMInputs.getExternalDiskSize()));
+                    vmDiskCloneExternal.setStorage_container_uuid(nutanixUpdateVMInputs.getStorageContainerUUID());
+                    vmDisks.setVm_disk_clone_external(vmDiskCloneExternal);
+                }
+                vmDisks.setDisk_address(diskAddress);
+            } else {
+                diskAddress.setDevice_bus(nutanixUpdateVMInputs.getDeviceBus());
+                diskAddress.setDisk_label(nutanixUpdateVMInputs.getDiskLabel());
+                diskAddress.setDevice_index(Integer.parseInt(nutanixUpdateVMInputs.getDeviceIndex()));
+                diskAddress.setNdfs_filepath(nutanixUpdateVMInputs.getNdfsFilepath());
+                vmDisks.setFlash_mode_enabled(Boolean.parseBoolean(nutanixUpdateVMInputs.getFlashModeEnabled()));
+                vmDisks.setIs_scsi_pass_through(Boolean.parseBoolean(nutanixUpdateVMInputs.getIsSCSIPassThrough()));
+                vmDisks.setIs_thin_provisioned(Boolean.parseBoolean(nutanixUpdateVMInputs.getIsThinProvisioned()));
+                vmDisks.setIs_cdrom(Boolean.parseBoolean(nutanixUpdateVMInputs.getIsCDROM()));
+                vmDisks.setIs_empty(Boolean.parseBoolean(nutanixUpdateVMInputs.getIsEmpty()));
+                UpdateVMRequestBody.VMDiskCreate vmDiskCreate = createVMBody.new VMDiskCreate();
+                vmDiskCreate.setStorage_container_uuid(nutanixUpdateVMInputs.getStorageContainerUUID());
+                vmDiskCreate.setSize((Long.parseLong(nutanixUpdateVMInputs.getVmDiskSize()) * 1024 * 1024 * 1024));
+                vmDisks.setVm_disk_create(vmDiskCreate);
+                if (!nutanixUpdateVMInputs.getExternalDiskUrl().isEmpty()) {
+                    diskAddress.setDevice_bus(nutanixUpdateVMInputs.getDeviceBus());
+                    diskAddress.setDisk_label(nutanixUpdateVMInputs.getDiskLabel());
+                    diskAddress.setDevice_index(Integer.parseInt(nutanixUpdateVMInputs.getDeviceIndex()));
+                    diskAddress.setNdfs_filepath(nutanixUpdateVMInputs.getNdfsFilepath());
+                    vmDisks.setFlash_mode_enabled(Boolean.parseBoolean(nutanixUpdateVMInputs.getFlashModeEnabled()));
+                    vmDisks.setIs_scsi_pass_through(Boolean.parseBoolean(nutanixUpdateVMInputs.getIsSCSIPassThrough()));
+                    vmDisks.setIs_thin_provisioned(Boolean.parseBoolean(nutanixUpdateVMInputs.getIsThinProvisioned()));
+                    vmDisks.setIs_cdrom(Boolean.parseBoolean(nutanixUpdateVMInputs.getIsCDROM()));
+                    vmDisks.setIs_empty(Boolean.parseBoolean(nutanixUpdateVMInputs.getIsEmpty()));
+                    UpdateVMRequestBody.VMDiskCloneExternal vmDiskCloneExternal = createVMBody.new VMDiskCloneExternal();
+                    vmDiskCloneExternal.setExternal_disk_url(nutanixUpdateVMInputs.getExternalDiskUrl());
+                    vmDiskCloneExternal.setSize(Integer.parseInt(nutanixUpdateVMInputs.getExternalDiskSize()));
+                    vmDiskCloneExternal.setStorage_container_uuid(nutanixUpdateVMInputs.getStorageContainerUUID());
+                    vmDisks.setVm_disk_clone_external(vmDiskCloneExternal);
+                }
+                vmDisks.setDisk_address(diskAddress);
+            }
+        }
+
+//        if (!nutanixUpdateVMInputs.getExternalDiskUrl().isEmpty()) {
+//            diskAddress.setDevice_bus(nutanixUpdateVMInputs.getDeviceBus());
+//            diskAddress.setDisk_label(nutanixUpdateVMInputs.getDiskLabel());
+//            diskAddress.setDevice_index(Integer.parseInt(nutanixUpdateVMInputs.getDeviceIndex()));
+//            diskAddress.setNdfs_filepath(nutanixUpdateVMInputs.getNdfsFilepath());
+//            vmDisks.setFlash_mode_enabled(Boolean.parseBoolean(nutanixUpdateVMInputs.getFlashModeEnabled()));
+//            vmDisks.setIs_scsi_pass_through(Boolean.parseBoolean(nutanixUpdateVMInputs.getIsSCSIPassThrough()));
+//            vmDisks.setIs_thin_provisioned(Boolean.parseBoolean(nutanixUpdateVMInputs.getIsThinProvisioned()));
+//            vmDisks.setIs_cdrom(Boolean.parseBoolean(nutanixUpdateVMInputs.getIsCDROM()));
+//            vmDisks.setIs_empty(Boolean.parseBoolean(nutanixUpdateVMInputs.getIsEmpty()));
+//            UpdateVMRequestBody.VMDiskCloneExternal vmDiskCloneExternal = createVMBody.new VMDiskCloneExternal();
+//            vmDiskCloneExternal.setExternal_disk_url(nutanixUpdateVMInputs.getExternalDiskUrl());
+//            vmDiskCloneExternal.setSize(Integer.parseInt(nutanixUpdateVMInputs.getExternalDiskSize()));
+//            vmDiskCloneExternal.setStorage_container_uuid(nutanixUpdateVMInputs.getStorageContainerUUID());
+//            vmDisks.setVm_disk_clone_external(vmDiskCloneExternal);
+//        }
+
+
+        UpdateVMRequestBody.VMNics vmNics = createVMBody.new VMNics();
+        vmNics.setNetwork_uuid(nutanixUpdateVMInputs.getNetworkUUID());
+        if(!isEmpty(nutanixUpdateVMInputs.getIsConnected())) {
+            vmNics.setIs_connected(Boolean.parseBoolean(nutanixUpdateVMInputs.getIsConnected()));
+        }
+        vmNics.setRequested_ip_address(nutanixUpdateVMInputs.getRequestedIPAddress());
+
+        UpdateVMRequestBody.VMFeatures vmFeatures = createVMBody.new VMFeatures();
+        if(!isEmpty(nutanixUpdateVMInputs.getAgentVM())) {
+            vmFeatures.setAGENT_VM(Boolean.parseBoolean(nutanixUpdateVMInputs.getAgentVM()));
+            createVMData.setVmFeatures(vmFeatures);
+        }
+        ArrayList vmNicsList = new ArrayList();
+        if(vmNics == null)
+            vmNicsList.add(vmNics);
+        createVMData.setVmNics(vmNicsList);
+        ArrayList vmDiskList = new ArrayList();
+        if(vmDisks == null)
+            vmDiskList.add(vmDisks);
+        createVMData.setVmDisks(vmDiskList);
+        if(affinity == null)
+            createVMData.setAffinity(affinity);
 
         try {
             requestBody = createVMMapper.writeValueAsString(createVMData);

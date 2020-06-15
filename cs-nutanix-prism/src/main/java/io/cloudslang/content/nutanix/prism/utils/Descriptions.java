@@ -177,6 +177,70 @@ public class Descriptions {
 
     }
 
+    public static class UpdateVM {
+        public static final String UPDATE_VM_OPERATION_DESC = "Update a Virtual Machine with specified configuration." +
+                "This is an asynchronous operation that results in the creation of a task object. " +
+                "The UUID of this task object is returned as the response of this operation. " +
+                "This task can be monitored by using the /tasks/poll API.";
+        public static final String VM_NAME_DESC = "Name of the Virtual Machine that will be updated.";
+        public static final String VM_DESCRIPTION_DESC = "The description of the Virtual Machine that will be updated.";
+        public static final String VM_MEMORY_SIZE_DESC = "The memory amount (in GiB) attached to the virtual machine " +
+                "that will will be updated.";
+        public static final String NUM_VCPUS_DESC = "The number that indicates how many processors will have the " +
+                "virtual machine that will be updated.";
+        public static final String NUM_CORES_PER_VCPU_DESC = "This is the number of cores per vCPU.";
+        public static final String TIME_ZONE_DESC = "The timezone in which the Virtual Machine will be updated." +
+                "Example : 'Asia/Calcutta'";
+        public static final String HYPERVISOR_TYPE_DESC = "The type hypervisor." +
+                "Example : ACROPOLIS.";
+        public static final String FLASH_MODE_ENABLED_DESC = "State of the storage policy to pin virtual disks to" +
+                " the hot tier. When specified as a VM attribute, the storage policy applies to all virtual disks of " +
+                "the VM unless overridden by the same attribute specified for a virtual disk." +
+                "Default : 'false'";
+        public static final String IS_SCSI_PASS_THROUGH_DESC = "If the value is 'true' Disks on the SCSI bus will be " +
+                "configured for passthrough on platforms that support iSCSI." +
+                "Default : 'false'";
+        public static final String IS_THIN_PROVISIONED_DESC = "If the value is 'true' then Virtual Machine will be " +
+                "created with thin provision." +
+                "Default : 'true'";
+        public static final String IS_CDROM_DESC = "If the value is 'true' then Virtual Machine needs to create " +
+                "with CDROM otherwise Virtual Machine will be created with Empty Disk.";
+        public static final String IS_EMPTY_DESC = "If the value is 'true' then Virtual Machine will created with Empty" +
+                "Disk." +
+                "Default : 'true'";
+        public static final String DEVICE_BUS_DESC = "The type of Device disk." +
+                "Allowed Values: SCSI, IDE, PCI, SATA, SPAPR.";
+        public static final String DISK_LABEL_DESC = "The Label for the disk that will be updated";
+        public static final String DEVICE_INDEX_DESC = "The Index of the disk device." +
+                "Default : '0'";
+        public static final String NDFS_FILE_PATH_DESC = "The refernece ndfs file location from which the disk will be " +
+                "updated.";
+        public static final String SOURCE_VM_DISK_UUID_DESC = "The reference disk UUID from which new disk will be " +
+                "updated.";
+        public static final String VM_DISK_MINIMUM_SIZE_DESC = "The size of reference disk." +
+                "Default : '0'";
+        public static final String EXTERNAL_DISK_URL_DESC = "The URL of the external reference disk which will be " +
+                "used to create a new disk.";
+        public static final String EXTERNAL_DISK_SIZE_DESC = "The size of the external disk to be created." +
+                "Default : '0'";
+        public static final String STORAGE_CONTAINER_UUID_DESC = "The reference storage container UUID from which the " +
+                "new storage container will be updated.";
+        public static final String VM_DISK_SIZE_DESC = "The size (in GiB) of the new storage container to be updated." +
+                "Default : '0'";
+        public static final String NETWORK_UUID_DESC = "The network UUID which will be attached to the Virtual Machine";
+        public static final String REQUESTED_IP_ADDRESS_DESC = "The static IP address which will be assigned to " +
+                "the Virtual Machine.";
+        public static final String IS_CONNECTED_DESC = "If the value of this property is 'true' the network will be " +
+                "connected while booting the Virtual Machine.";
+        public static final String HOST_UUIDS_DESC = "The Host UUIDs for which Virtual Machine will be mapped.";
+        public static final String AGENT_VM_DESC = "Indicates whether the VM is an agent VM. When their host enters " +
+                "maintenance mode, after normal VMs are evacuated, agent VMs are powered off. When the host is " +
+                "restored, agent VMs are powered on before normal VMs are restored. In other words, agent VMs cannot " +
+                "be HA-protected or live migrated." +
+                "Default : 'false'";
+
+    }
+
     public static class GetTaskDetails {
         public static final String GET_TASK_DETAILS_OPERATION_DESC = "Get details of the specified task.";
         public static final String INCLUDE_SUBTASKS_INFO_DESC = "Whether to include a detailed information of the " +

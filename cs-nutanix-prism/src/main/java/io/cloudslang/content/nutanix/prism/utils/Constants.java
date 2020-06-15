@@ -36,6 +36,7 @@ public class Constants {
         public static final String BASIC = "basic";
         public static final String GET = "GET";
         public static final String POST = "POST";
+        public static final String PUT = "PUT";
         public static final String PATCH = "PATCH";
         public static final String DELETE = "DELETE";
         public static final String DEFAULT_JAVA_KEYSTORE = System.getProperty("java.home") + "/lib/security/cacerts";
@@ -110,6 +111,12 @@ public class Constants {
     public static class CreateVMConstants {
         public static final String CREATE_VM_OPERATION_NAME = "Create VM";
         public static final String TASK_UUID_PATH = "task_uuid";
+    }
+
+    public static class UpdateVMConstants {
+        public static final String UPDATE_VM_OPERATION_NAME = "Create VM";
+        public static final String TASK_UUID_PATH = "task_uuid";
+
     }
 
     public static class GetTaskDetailsConstants {
